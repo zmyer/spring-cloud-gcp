@@ -23,9 +23,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author João André Martins
  */
 @SpringBootApplication
-public class SqlApplication {
+//HideUtilityClassConstructorCheck OFF
+public abstract class SqlApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SqlApplication.class, args);
 	}
 }
+//HideUtilityClassConstructorCheck ON

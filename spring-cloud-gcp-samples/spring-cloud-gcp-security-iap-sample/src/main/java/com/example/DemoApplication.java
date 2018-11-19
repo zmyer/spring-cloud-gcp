@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author Elena Felder
  * @since 1.1
  */
+//HideUtilityClassConstructorCheck OFF
 @SpringBootApplication
 public class DemoApplication {
 
@@ -32,3 +33,4 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 }
+//HideUtilityClassConstructorCheck ON

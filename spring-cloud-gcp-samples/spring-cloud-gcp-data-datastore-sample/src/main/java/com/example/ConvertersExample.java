@@ -27,7 +27,7 @@ import org.springframework.core.convert.converter.Converter;
 /**
  * @author Dmitry Solomakha
  */
-public class ConvertersExample {
+public abstract class ConvertersExample {
 	//Converter to read ImmutableSet
 	//Note that you don't need a ImmutableSet to List converter
 	static final Converter<List<?>, ImmutableSet<?>> LIST_IMMUTABLE_SET_CONVERTER =

@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author Mike Eltsufin
  */
+//HideUtilityClassConstructorCheck OFF
 @SpringBootApplication
 public class GcsApplication {
 
@@ -32,3 +33,4 @@ public class GcsApplication {
 		SpringApplication.run(GcsApplication.class, args);
 	}
 }
+//HideUtilityClassConstructorCheck ON

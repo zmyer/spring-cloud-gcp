@@ -23,9 +23,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author João André Martins
  */
 @SpringBootApplication
+//HideUtilityClassConstructorCheck OFF
 public class PubSubBinderApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(PubSubBinderApplication.class, args);
 	}
 }
+//HideUtilityClassConstructorCheck ON

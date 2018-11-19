@@ -21,7 +21,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * @author Dmitry Solomakha
  */
-public class ValueUtil {
+public abstract class ValueUtil {
 	public static Object toIterableIfArray(Object val) {
 		if (val != null && val.getClass().isArray() && val.getClass() != byte[].class) {
 			//if a property is an array, convert it to list

@@ -34,7 +34,7 @@ import org.springframework.lang.Nullable;
  *
  * @since 1.1
  */
-public class SpannerConverters {
+public abstract class SpannerConverters {
 
 	// @formatter:off
 	public static final Converter<Date, com.google.cloud.Date>

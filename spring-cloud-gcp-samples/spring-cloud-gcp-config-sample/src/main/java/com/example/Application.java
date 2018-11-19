@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 *
 * @author Jisha Abubaker
 */
+//HideUtilityClassConstructorCheck OFF
 @SpringBootApplication
 @EnableConfigurationProperties(MyAppProperties.class)
 public class Application {
@@ -32,3 +33,4 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 }
+//HideUtilityClassConstructorCheck ON

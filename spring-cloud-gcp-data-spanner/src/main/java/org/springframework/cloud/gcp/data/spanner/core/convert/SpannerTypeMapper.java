@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableMap;
  *
  * @since 1.1
  */
-public class SpannerTypeMapper {
+public abstract class SpannerTypeMapper {
 
 	private static final Map<Class, Type.Code> JAVA_TYPE_TO_SPANNER_SIMPLE_COLUMN_TYPE_MAPPING;
 

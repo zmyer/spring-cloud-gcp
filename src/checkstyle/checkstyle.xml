@@ -55,10 +55,13 @@
         <!-- Class Design -->
         <module name="com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck" />
         <module name="com.puppycrawl.tools.checkstyle.checks.design.InterfaceIsTypeCheck" />
-        <!-- TODO: re-enable when ready -->
-        <!--
-        <module name="com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck" />
-        -->
+        <module name="com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck" >
+            <module name="SuppressionCommentFilter">
+                <property name="offCommentFormat" value="HideUtilityClassConstructorCheck OFF"/>
+                <property name="onCommentFormat" value="HideUtilityClassConstructorCheck ON"/>
+            </module>
+        </module>
+
         <module name="com.puppycrawl.tools.checkstyle.checks.design.MutableExceptionCheck" />
         <module name="com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck" />
         <!--<module name="com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck" />-->
