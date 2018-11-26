@@ -27,6 +27,7 @@ import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
 /**
@@ -67,6 +68,6 @@ public class SenderConfiguration {
 
 	@MessagingGateway(defaultRequestChannel = "pubSubOutputChannel")
 	public interface PubSubPersonGateway {
-		void sendPersonToPubSub(Person person);
+		void sendPersonToPubSub(Person person, @Header(name = "custom-header") String p);
 	}
 }

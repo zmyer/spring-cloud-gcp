@@ -51,7 +51,7 @@ public class WebController {
 	@PostMapping("/createPerson")
 	public RedirectView createUser(@RequestParam("name") String name, @RequestParam("age") int age) {
 		Person person = new Person(name, age);
-		this.pubSubPersonGateway.sendPersonToPubSub(person);
+		this.pubSubPersonGateway.sendPersonToPubSub(person, "custom-attr-value");
 		return new RedirectView("/");
 	}
 

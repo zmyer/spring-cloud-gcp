@@ -68,6 +68,7 @@ public class ReceiverConfiguration {
 	public void messageReceiver(Person payload,
 			@Header(GcpPubSubHeaders.ORIGINAL_MESSAGE) BasicAcknowledgeablePubsubMessage message) {
 		LOGGER.info("Message arrived! Payload: " + payload);
+		LOGGER.info("Attributes: " + message.getPubsubMessage().getAttributesMap());
 		this.processedPersonsList.add(payload);
 		message.ack();
 	}

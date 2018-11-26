@@ -16,6 +16,7 @@
 
 package com.example;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -71,7 +72,7 @@ public class WebController {
 	public RedirectView publish(@RequestParam("topicName") String topicName,
 			@RequestParam("message") String message, @RequestParam("count") int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
-			this.pubSubTemplate.publish(topicName, message);
+			this.pubSubTemplate.publish(topicName, message, ImmutableMap.of("test-header", "Header-value-sample"));
 		}
 
 		return buildStatusView("Messages published asynchronously; status unknown.");
@@ -133,6 +134,7 @@ public class WebController {
 		Subscriber subscriber = this.pubSubTemplate.subscribe(subscriptionName, (message) -> {
 			LOGGER.info("Message received from " + subscriptionName + " subscription. "
 					+ message.getPubsubMessage().getData().toStringUtf8());
+			LOGGER.info(message.getPubsubMessage().getAttributesMap());
 			message.ack();
 		});
 
