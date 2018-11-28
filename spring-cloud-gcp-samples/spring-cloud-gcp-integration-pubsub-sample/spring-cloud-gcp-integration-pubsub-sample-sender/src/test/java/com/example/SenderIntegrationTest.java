@@ -57,10 +57,10 @@ public class SenderIntegrationTest {
 
 	@BeforeClass
 	public static void prepare() {
-		assumeThat(
-				"PUB/SUB-sample integration tests are disabled. Please use '-Dit.pubsub=true' "
-						+ "to enable them. ",
-				System.getProperty("it.pubsub"), is("true"));
+		// assumeThat(
+		// 		"PUB/SUB-sample integration tests are disabled. Please use '-Dit.pubsub=true' "
+		// 				+ "to enable them. ",
+		// 		System.getProperty("it.pubsub"), is("true"));
 	}
 
 	@Test

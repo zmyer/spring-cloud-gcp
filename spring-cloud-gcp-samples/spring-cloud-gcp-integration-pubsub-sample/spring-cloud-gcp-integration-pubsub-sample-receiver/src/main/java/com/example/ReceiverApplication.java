@@ -25,12 +25,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.cloud.gcp.pubsub.integration.AckMode;
 import org.springframework.cloud.gcp.pubsub.integration.inbound.PubSubInboundChannelAdapter;
+import org.springframework.cloud.gcp.pubsub.integration.outbound.PubSubMessageHandler;
 import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import org.springframework.cloud.gcp.pubsub.support.GcpPubSubHeaders;
 import org.springframework.context.annotation.Bean;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.endpoint.MessageProducerSupport;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.handler.annotation.Header;
 
 @SpringBootApplication
@@ -48,21 +51,19 @@ public class ReceiverApplication {
 	}
 
 	@Bean
-	public PubSubInboundChannelAdapter messageChannelAdapter(
+	public MessageProducerSupport messageChannelAdapter(
 			@Qualifier("pubsubInputChannel") MessageChannel inputChannel,
 			PubSubTemplate pubSubTemplate) {
 		PubSubInboundChannelAdapter adapter =
 				new PubSubInboundChannelAdapter(pubSubTemplate, "exampleSubscription");
 		adapter.setOutputChannel(inputChannel);
 		adapter.setAckMode(AckMode.MANUAL);
-		adapter.setPayloadType(String.class);
 		return adapter;
 	}
 
+	@Bean
 	@ServiceActivator(inputChannel = "pubsubInputChannel")
-	public void messageReceiver(String payload,
-			@Header(GcpPubSubHeaders.ORIGINAL_MESSAGE) BasicAcknowledgeablePubsubMessage message) {
-		LOGGER.info("Message arrived! Payload: " + payload);
-		message.ack();
+	public MessageHandler messageReceiver(PubSubTemplate pubSubTemplate) {
+		return new TestMessageHandler();
 	}
 }
