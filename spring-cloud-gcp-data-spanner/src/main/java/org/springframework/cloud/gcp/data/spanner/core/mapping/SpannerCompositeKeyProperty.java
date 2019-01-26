@@ -124,6 +124,11 @@ public class SpannerCompositeKeyProperty implements SpannerPersistentProperty {
 	}
 
 	@Override
+	public boolean isCommitTimestamp() {
+		return false;
+	}
+
+	@Override
 	public Code getAnnotatedColumnItemType() {
 		return null;
 	}
@@ -279,6 +284,8 @@ public class SpannerCompositeKeyProperty implements SpannerPersistentProperty {
 	}
 
 	/**
+	 * Returns {@code null}.
+	 *
 	 * @since 1.1
 	 */
 	@Override
@@ -287,6 +294,8 @@ public class SpannerCompositeKeyProperty implements SpannerPersistentProperty {
 	}
 
 	/**
+	 * Returns {@code false}.
+	 *
 	 * @since 1.1
 	 */
 	@Override
@@ -295,6 +304,8 @@ public class SpannerCompositeKeyProperty implements SpannerPersistentProperty {
 	}
 
 	/**
+	 * Returns {@code null}.
+	 *
 	 * @since 1.1
 	 */
 	@Override

@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gcp.autoconfigure.core.GcpContextAutoConfiguration;
 import org.springframework.cloud.gcp.core.DefaultCredentialsProvider;
 import org.springframework.cloud.gcp.core.GcpProjectIdProvider;
-import org.springframework.cloud.gcp.core.UsageTrackingHeaderProvider;
+import org.springframework.cloud.gcp.core.UserAgentHeaderProvider;
 import org.springframework.cloud.gcp.data.datastore.core.DatastoreOperations;
 import org.springframework.cloud.gcp.data.datastore.core.DatastoreTemplate;
 import org.springframework.cloud.gcp.data.datastore.core.convert.DatastoreCustomConversions;
@@ -71,7 +71,7 @@ public class GcpDatastoreAutoConfiguration {
 		this.credentials = (gcpDatastoreProperties.getCredentials().hasKey()
 				? new DefaultCredentialsProvider(gcpDatastoreProperties)
 				: credentialsProvider).getCredentials();
-		this.projectId = gcpDatastoreProperties.getProjectId() != null
+		this.projectId = (gcpDatastoreProperties.getProjectId() != null)
 				? gcpDatastoreProperties.getProjectId()
 				: projectIdProvider.getProjectId();
 		this.namespace = gcpDatastoreProperties.getNamespace();
@@ -82,7 +82,7 @@ public class GcpDatastoreAutoConfiguration {
 	public Datastore datastore() {
 		DatastoreOptions.Builder builder = DatastoreOptions.newBuilder()
 				.setProjectId(this.projectId)
-				.setHeaderProvider(new UsageTrackingHeaderProvider(this.getClass()))
+				.setHeaderProvider(new UserAgentHeaderProvider(this.getClass()))
 				.setCredentials(this.credentials);
 		if (this.namespace != null) {
 			builder.setNamespace(this.namespace);

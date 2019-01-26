@@ -78,7 +78,7 @@ public class ConverterAwareMappingSpannerEntityProcessor implements SpannerEntit
 		while (resultSet.next()) {
 			result.add(this.entityReader.read(entityClass,
 					resultSet.getCurrentRowAsStruct(),
-					includeColumns == null ? null : includeColumns,
+					includeColumns,
 					allowMissingColumns));
 		}
 		resultSet.close();
@@ -89,35 +89,34 @@ public class ConverterAwareMappingSpannerEntityProcessor implements SpannerEntit
 	public <T> List<T> mapToList(ResultSet resultSet, Class<T> entityClass,
 			String... includeColumns) {
 		return mapToList(resultSet, entityClass,
-				includeColumns.length == 0 ? null
+				(includeColumns.length == 0) ? null
 						: new HashSet<>(Arrays.asList(includeColumns)),
 				false);
 	}
 
 	@Override
-	public Class getCorrespondingSpannerJavaType(Class originalType, boolean isIterableInnerType) {
-		Set<Class<?>> spannerTypes = (isIterableInnerType
-				? ConverterAwareMappingSpannerEntityWriter.iterablePropertyType2ToMethodMap
-				: ConverterAwareMappingSpannerEntityWriter.singleItemType2ToMethodMap).keySet();
-		if (spannerTypes.contains(originalType)) {
-			return originalType;
-		}
-		Class ret = null;
-		for (Class spannerType : spannerTypes) {
-			if (isIterableInnerType
-					&& canHandlePropertyTypeForArrayRead(originalType, spannerType)
-					&& canHandlePropertyTypeForArrayWrite(originalType, spannerType)) {
-				ret = spannerType;
-				break;
+	public Class<?> getCorrespondingSpannerJavaType(Class originalType, boolean isIterableInnerType) {
+		Class<?> compatible;
+		if (isIterableInnerType) {
+			if (ConverterAwareMappingSpannerEntityWriter.iterablePropertyType2ToMethodMap.keySet()
+					.contains(originalType)) {
+				return originalType;
 			}
-			else if (!isIterableInnerType
-					&& canHandlePropertyTypeForSingularRead(originalType, spannerType)
-					&& canHandlePropertyTypeForSingularWrite(originalType, spannerType)) {
-				ret = spannerType;
-				break;
-			}
+			compatible = ConverterAwareMappingSpannerEntityWriter.findFirstCompatibleSpannerMultupleItemNativeType(
+					(spannerType) -> canHandlePropertyTypeForArrayRead(originalType, spannerType)
+							&& this.writeConverter.canConvert(originalType, spannerType));
 		}
-		return ret;
+		else {
+			if (ConverterAwareMappingSpannerEntityWriter.singleItemTypeValueBinderMethodMap.keySet()
+					.contains(originalType)) {
+				return originalType;
+			}
+			compatible = ConverterAwareMappingSpannerEntityWriter
+					.findFirstCompatibleSpannerSingleItemNativeType(
+							(spannerType) -> canHandlePropertyTypeForSingularRead(originalType, spannerType)
+									&& this.writeConverter.canConvert(originalType, spannerType));
+		}
+		return compatible;
 	}
 
 	private boolean canHandlePropertyTypeForSingularRead(Class type,
@@ -144,31 +143,6 @@ public class ConverterAwareMappingSpannerEntityProcessor implements SpannerEntit
 		}
 		return type.equals(spannerSupportedArrayInnerType)
 				|| this.readConverter.canConvert(spannerSupportedArrayInnerType, type);
-	}
-
-	private boolean canHandlePropertyTypeForSingularWrite(Class type,
-			Class spannerSupportedType) {
-		if (!ConverterAwareMappingSpannerEntityWriter.singleItemType2ToMethodMap
-				.containsKey(spannerSupportedType)) {
-			throw new SpannerDataException(
-					"The given spannerSupportedType is not a known Spanner directly-supported column type: "
-							+ spannerSupportedType);
-		}
-		return type.equals(spannerSupportedType)
-				|| this.writeConverter.canConvert(type, spannerSupportedType);
-	}
-
-	private boolean canHandlePropertyTypeForArrayWrite(Class type,
-			Class spannerSupportedArrayInnerType) {
-		if (!ConverterAwareMappingSpannerEntityWriter.iterablePropertyType2ToMethodMap
-				.containsKey(spannerSupportedArrayInnerType)) {
-			throw new SpannerDataException(
-					"The given spannerSupportedArrayInnerType is not a known "
-							+ "Spanner directly-supported column type: "
-							+ spannerSupportedArrayInnerType);
-		}
-		return type.equals(spannerSupportedArrayInnerType)
-				|| this.writeConverter.canConvert(type, spannerSupportedArrayInnerType);
 	}
 
 	/**

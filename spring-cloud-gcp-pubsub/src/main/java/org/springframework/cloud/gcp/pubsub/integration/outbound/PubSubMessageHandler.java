@@ -136,7 +136,7 @@ public class PubSubMessageHandler extends AbstractMessageHandler {
 
 	/**
 	 * Set the SpEL expression for the topic this adapter sends messages to.
-	 * @param topicExpression SpEL expression representing the topic name
+	 * @param topicExpression the SpEL expression representing the topic name
 	 */
 	public void setTopicExpression(Expression topicExpression) {
 		this.topicExpression = topicExpression;
@@ -200,7 +200,7 @@ public class PubSubMessageHandler extends AbstractMessageHandler {
 	}
 
 	@Override
-	protected void onInit() throws Exception {
+	protected void onInit()  {
 		super.onInit();
 		this.evaluationContext = ExpressionUtils.createStandardEvaluationContext(getBeanFactory());
 	}

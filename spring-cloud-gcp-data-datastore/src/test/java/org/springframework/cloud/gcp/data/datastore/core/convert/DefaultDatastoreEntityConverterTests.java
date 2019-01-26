@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.cloud.gcp.data.datastore.core.convert;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,12 +38,12 @@ import com.google.cloud.datastore.NullValue;
 import com.google.cloud.datastore.StringValue;
 import com.google.cloud.datastore.Value;
 import com.google.cloud.datastore.testing.LocalDatastoreHelper;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.springframework.cloud.gcp.data.datastore.core.convert.TestDatastoreItemCollections.ComparableBeanContextSupport;
 import org.springframework.cloud.gcp.data.datastore.core.convert.TestItemWithEmbeddedEntity.EmbeddedEntity;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastoreDataException;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastoreMappingContext;
@@ -50,9 +51,10 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 /**
+ * Tests for the entity converter.
+ *
  * @author Dmitry Solomakha
  * @author Chengyuan Zhao
  *
@@ -73,6 +75,9 @@ public class DefaultDatastoreEntityConverterTests {
 								}
 							})), null));
 
+	/**
+	 * Used to check exception messages and types.
+	 */
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
@@ -297,45 +302,66 @@ public class DefaultDatastoreEntityConverterTests {
 
 	@Test
 	public void testCollectionFieldsUnsupportedCollection() {
+
 		this.thrown.expect(DatastoreDataException.class);
 		this.thrown.expectMessage("Unable to read " +
 				"org.springframework.cloud.gcp.data.datastore.core.convert.TestDatastoreItemCollections entity;");
-		this.thrown.expectMessage("Unable to read property doubleSet;");
+		this.thrown.expectMessage("Unable to read property beanContext;");
+
 		this.thrown.expectMessage(
 				"Failed to convert from type [java.util.ArrayList<?>] " +
-						"to type [com.google.common.collect.ImmutableSet<?>]");
+						"to type [org.springframework.cloud.gcp.data.datastore.core.convert.TestDatastoreItemCollections$ComparableBeanContextSupport]");
+
+		ComparableBeanContextSupport comparableBeanContextSupport = new ComparableBeanContextSupport();
+		comparableBeanContextSupport.add("this implementation of Collection");
+		comparableBeanContextSupport.add("is unsupported out of the box!");
 
 		TestDatastoreItemCollections item = new TestDatastoreItemCollections(
 				Arrays.asList(1, 2),
-				ImmutableSet.of(3.14, 2.71),
+				comparableBeanContextSupport,
 				new String[] { "abc", "def" }, new boolean[] {true, false}, null, null);
 
 		Entity.Builder builder = getEntityBuilder();
 		ENTITY_CONVERTER.write(item, builder);
 		Entity entity = builder.build();
 
-		ENTITY_CONVERTER.read(TestDatastoreItemCollections.class, entity);
+		TestDatastoreItemCollections result = ENTITY_CONVERTER.read(TestDatastoreItemCollections.class, entity);
 	}
 
 	@Test
 	public void testCollectionFields() {
 		byte[][] bytes = {{1, 2}, {3, 4}};
 		List<byte[]> listByteArray = Arrays.asList(bytes);
+
+		ComparableBeanContextSupport ComparableBeanContextSupport = new ComparableBeanContextSupport();
+		ComparableBeanContextSupport.add("this implementation of Collection");
+		ComparableBeanContextSupport.add("is supported through a custom converter!");
+
 		TestDatastoreItemCollections item =
 				new TestDatastoreItemCollections(
 						Arrays.asList(1, 2),
-						ImmutableSet.of(3.14, 2.71),
+						ComparableBeanContextSupport,
 						new String[]{"abc", "def"}, new boolean[] {true, false}, bytes, listByteArray);
 
 		DatastoreEntityConverter entityConverter =
 				new DefaultDatastoreEntityConverter(
 						new DatastoreMappingContext(),
 						new TwoStepsConversions(new DatastoreCustomConversions(
-								Collections.singletonList(
-										new Converter<List<?>, ImmutableSet<?>>() {
+								Arrays.asList(
+										new Converter<List<String>, ComparableBeanContextSupport>() {
 											@Override
-											public ImmutableSet<?> convert(List<?> source) {
-												return ImmutableSet.copyOf(source);
+											public ComparableBeanContextSupport convert(List<String> source) {
+												ComparableBeanContextSupport bcs = new ComparableBeanContextSupport();
+												source.forEach(bcs::add);
+												return bcs;
+											}
+										},
+										new Converter<ComparableBeanContextSupport, List<String>>() {
+											@Override
+											public List<String> convert(ComparableBeanContextSupport bcs) {
+												List<String> list = new ArrayList<>();
+												bcs.iterator().forEachRemaining((s) -> list.add((String) s));
+												return list;
 											}
 										})), null));
 
@@ -351,10 +377,10 @@ public class DefaultDatastoreEntityConverterTests {
 		assertThat(stringArray.stream().map(Value::get).collect(Collectors.toList()))
 				.as("validate string array values").isEqualTo(Arrays.asList("abc", "def"));
 
-		List<Value<?>> doubleSet = entity.getList("doubleSet");
-		assertThat(doubleSet.stream().map(Value::get).collect(Collectors.toSet()))
-				.as("validate double set values")
-				.isEqualTo(new HashSet<>(Arrays.asList(3.14, 2.71)));
+		List<Value<?>> beanContext = entity.getList("beanContext");
+		assertThat(beanContext.stream().map(Value::get).collect(Collectors.toSet()))
+				.as("validate bean context values")
+				.isEqualTo(new HashSet<>(Arrays.asList("this implementation of Collection", "is supported through a custom converter!")));
 
 		List<Value<?>> bytesVals = entity.getList("bytes");
 		assertThat(bytesVals.stream().map(Value::get).collect(Collectors.toList()))
@@ -368,6 +394,7 @@ public class DefaultDatastoreEntityConverterTests {
 
 		TestDatastoreItemCollections readItem =
 				entityConverter.read(TestDatastoreItemCollections.class, entity);
+
 		assertThat(item.equals(readItem)).as("read object should be equal to original").isTrue();
 	}
 
@@ -391,9 +418,9 @@ public class DefaultDatastoreEntityConverterTests {
 		assertThat(stringArray)
 				.as("validate string array is null").isNull();
 
-		List<Value<?>> doubleSet = entity.getList("doubleSet");
-		assertThat(doubleSet)
-				.as("validate double set is null")
+		List<Value<?>> beanContext = entity.getList("beanContext");
+		assertThat(beanContext)
+				.as("validate bean context is null")
 				.isNull();
 
 		TestDatastoreItemCollections readItem = ENTITY_CONVERTER.read(TestDatastoreItemCollections.class, entity);
@@ -565,7 +592,7 @@ public class DefaultDatastoreEntityConverterTests {
 		Entity entity = builder.build();
 
 		assertThat(entity.getList("listOfEmbeddedEntities").stream()
-				.map(val -> ((BaseEntity<?>) val.get()).getString("stringField")).collect(Collectors.toList()))
+				.map((val) -> ((BaseEntity<?>) val.get()).getString("stringField")).collect(Collectors.toList()))
 						.as("validate embedded entity").isEqualTo(Arrays.asList("item 0", "item 1"));
 
 		assertThat(entity.getEntity("embeddedEntityField").getString("stringField"))
@@ -601,19 +628,17 @@ public class DefaultDatastoreEntityConverterTests {
 
 		assertThat(((BaseEntity) embeddedMapValuesEmbeddedEntityA.get(0).get())
 				.getString("stringField")).isEqualTo("item 0");
-		assertEquals(1, embeddedMapValuesEmbeddedEntityA.size());
+		assertThat(embeddedMapValuesEmbeddedEntityA.size()).isEqualTo(1);
 
 		assertThat(((BaseEntity) embeddedMapValuesEmbeddedEntityB.get(0).get())
 				.getString("stringField")).isEqualTo("item 1");
-		assertEquals(1, embeddedMapValuesEmbeddedEntityB.size());
+		assertThat(embeddedMapValuesEmbeddedEntityB.size()).isEqualTo(1);
 
 		TestItemWithEmbeddedEntity read = entityConverter
 				.read(TestItemWithEmbeddedEntity.class, entity);
 
-		assertEquals("valueA",
-				read.getNestedEmbeddedMaps().get("outer1").get(1L).get("a"));
-		assertEquals("valueB",
-				read.getNestedEmbeddedMaps().get("outer1").get(1L).get("b"));
+		assertThat(read.getNestedEmbeddedMaps().get("outer1").get(1L).get("a")).isEqualTo("valueA");
+		assertThat(read.getNestedEmbeddedMaps().get("outer1").get(1L).get("b")).isEqualTo("valueB");
 
 		assertThat(read).as("read objects equals the original one").isEqualTo(item);
 	}

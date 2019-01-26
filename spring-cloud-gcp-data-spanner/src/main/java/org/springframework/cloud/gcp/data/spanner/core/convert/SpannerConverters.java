@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,33 @@ package org.springframework.cloud.gcp.data.spanner.core.convert;
 
 import java.sql.Date;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 
 import com.google.cloud.ByteArray;
 import com.google.cloud.Timestamp;
-import com.google.common.collect.ImmutableSet;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.Nullable;
 
 /**
+ * Default commonly-used custom converters.
+ *
  * @author Chengyuan Zhao
  * @author Balint Pato
  *
  * @since 1.1
  */
-public class SpannerConverters {
+public final class SpannerConverters {
 
+	private SpannerConverters() {
+	}
+
+	/**
+	 * A converter from {@link java.sql.Date} to the Spanner date type.
+	 */
 	// @formatter:off
 	public static final Converter<Date, com.google.cloud.Date>
 					JAVA_SQL_TO_SPANNER_DATE_CONVERTER =
@@ -53,6 +62,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from the Spanner date type to {@link Date}.
+	 */
 	// @formatter:off
 	public static final Converter<com.google.cloud.Date, java.sql.Date>
 					SPANNER_TO_JAVA_SQL_DATE_CONVERTER =
@@ -67,6 +79,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from {@link java.util.Date} to the Spanner date type.
+	 */
 	// @formatter:off
 	public static final Converter<java.util.Date, com.google.cloud.Date>
 					JAVA_TO_SPANNER_DATE_CONVERTER = new Converter<java.util.Date, com.google.cloud.Date>() {
@@ -81,6 +96,9 @@ public class SpannerConverters {
 		}
 	};
 
+	/**
+	 * A converter from the Spanner date type to {@link java.util.Date}.
+	 */
 	// @formatter:off
 	public static final Converter<com.google.cloud.Date, java.util.Date> SPANNER_TO_JAVA_DATE_CONVERTER =
 					new Converter<com.google.cloud.Date, java.util.Date>() {
@@ -94,6 +112,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from {@link Instant} to the Spanner instantaneous time type.
+	 */
 	// @formatter:off
 	public static final Converter<Instant, Timestamp> INSTANT_TIMESTAMP_CONVERTER =
 					new Converter<Instant, Timestamp>() {
@@ -105,6 +126,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from the Spanner instantaneous time type to {@link Instant}.
+	 */
 	// @formatter:off
 	public static final Converter<Timestamp, Instant> TIMESTAMP_INSTANT_CONVERTER =
 					new Converter<Timestamp, Instant>() {
@@ -116,6 +140,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from {@link java.sql.Timestamp} to the Spanner instantaneous time type.
+	 */
 	// @formatter:off
 	public static final Converter<java.sql.Timestamp, Timestamp> JAVA_TO_SPANNER_TIMESTAMP_CONVERTER =
 					new Converter<java.sql.Timestamp, Timestamp>() {
@@ -127,6 +154,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from the Spanner instantaneous time type to {@link java.sql.Timestamp}.
+	 */
 	// @formatter:off
 	public static final Converter<Timestamp, java.sql.Timestamp> SPANNER_TO_JAVA_TIMESTAMP_CONVERTER =
 					new Converter<Timestamp, java.sql.Timestamp>() {
@@ -138,6 +168,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from a byte array to the Spanner bytes type.
+	 */
 	// @formatter:off
 	public static final Converter<byte[], ByteArray> JAVA_TO_SPANNER_BYTE_ARRAY_CONVERTER =
 					new Converter<byte[], ByteArray>() {
@@ -149,6 +182,9 @@ public class SpannerConverters {
 						}
 					};
 
+	/**
+	 * A converter from the Spanner bytes type to a byte array.
+	 */
 	// @formatter:off
 	public static final Converter<ByteArray, byte[]> SPANNER_TO_JAVA_BYTE_ARRAY_CONVERTER =
 					new Converter<ByteArray, byte[]>() {
@@ -161,18 +197,20 @@ public class SpannerConverters {
 					};
 
 	/** Converters from common types to those used by Spanner. */
-	public static final Collection<Converter> DEFAULT_SPANNER_WRITE_CONVERTERS = ImmutableSet.of(
+	public static final Collection<Converter> DEFAULT_SPANNER_WRITE_CONVERTERS = Collections.unmodifiableCollection(
+			Arrays.asList(
 					JAVA_TO_SPANNER_DATE_CONVERTER,
 					INSTANT_TIMESTAMP_CONVERTER,
 					JAVA_TO_SPANNER_BYTE_ARRAY_CONVERTER,
 					JAVA_TO_SPANNER_TIMESTAMP_CONVERTER,
-					JAVA_SQL_TO_SPANNER_DATE_CONVERTER);
+					JAVA_SQL_TO_SPANNER_DATE_CONVERTER));
 
 	/** Converters from common types to those used by Spanner. */
-	public static final Collection<Converter> DEFAULT_SPANNER_READ_CONVERTERS = ImmutableSet.of(
+	public static final Collection<Converter> DEFAULT_SPANNER_READ_CONVERTERS = Collections.unmodifiableCollection(
+			Arrays.asList(
 					SPANNER_TO_JAVA_DATE_CONVERTER,
 					TIMESTAMP_INSTANT_CONVERTER,
 					SPANNER_TO_JAVA_BYTE_ARRAY_CONVERTER,
 					SPANNER_TO_JAVA_TIMESTAMP_CONVERTER,
-					SPANNER_TO_JAVA_SQL_DATE_CONVERTER);
+					SPANNER_TO_JAVA_SQL_DATE_CONVERTER));
 }

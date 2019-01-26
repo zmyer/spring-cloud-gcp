@@ -19,18 +19,19 @@ package org.springframework.cloud.gcp.data.datastore.repository;
 import java.util.function.Function;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.QueryByExampleExecutor;
 
 /**
  * A {@link PagingAndSortingRepository} that provides Datastore-specific functionality.
  *
- * @param <T> The type of the domain object
- * @param <ID> The type of the ID property in the domain object
+ * @param <T> the type of the domain object
+ * @param <ID> the type of the ID property in the domain object
  *
  * @author Chengyuan Zhao
  *
  * @since 1.1
  */
-public interface DatastoreRepository<T, ID> extends PagingAndSortingRepository<T, ID> {
+public interface DatastoreRepository<T, ID> extends PagingAndSortingRepository<T, ID>, QueryByExampleExecutor<T> {
 
 	/**
 	 * Performs multiple read and write operations in a single transaction.

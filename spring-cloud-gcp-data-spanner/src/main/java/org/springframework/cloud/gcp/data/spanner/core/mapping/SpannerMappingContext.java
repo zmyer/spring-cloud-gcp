@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.gcp.data.spanner.core.mapping;
 
-import com.google.common.annotations.VisibleForTesting;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -58,8 +57,7 @@ public class SpannerMappingContext extends
 	 * properties get column names.
 	 */
 	public void setFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy) {
-		this.fieldNamingStrategy = fieldNamingStrategy == null ? DEFAULT_NAMING_STRATEGY
-				: fieldNamingStrategy;
+		this.fieldNamingStrategy = (fieldNamingStrategy != null) ? fieldNamingStrategy : DEFAULT_NAMING_STRATEGY;
 	}
 
 	/**
@@ -80,7 +78,6 @@ public class SpannerMappingContext extends
 		return persistentEntity;
 	}
 
-	@VisibleForTesting
 	protected <T> SpannerPersistentEntityImpl<T> constructPersistentEntity(
 			TypeInformation<T> typeInformation) {
 		return new SpannerPersistentEntityImpl<>(typeInformation);

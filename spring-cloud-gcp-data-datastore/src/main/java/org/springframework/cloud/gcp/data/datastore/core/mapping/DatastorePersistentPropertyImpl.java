@@ -39,7 +39,7 @@ public class DatastorePersistentPropertyImpl
 	private final FieldNamingStrategy fieldNamingStrategy;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
 	 * @param property the property to store
 	 * @param owner the entity to which this property belongs
@@ -51,20 +51,20 @@ public class DatastorePersistentPropertyImpl
 			PersistentEntity<?, DatastorePersistentProperty> owner,
 			SimpleTypeHolder simpleTypeHolder, FieldNamingStrategy fieldNamingStrategy) {
 		super(property, owner, simpleTypeHolder);
-		this.fieldNamingStrategy = fieldNamingStrategy == null
-				? PropertyNameFieldNamingStrategy.INSTANCE
-				: fieldNamingStrategy;
+		this.fieldNamingStrategy = (fieldNamingStrategy != null)
+				? fieldNamingStrategy
+				: PropertyNameFieldNamingStrategy.INSTANCE;
 		verify();
 	}
 
 	private void verify() {
 		if (hasFieldAnnotation()
-				&& (isDescendants() || isReference())) {
+				&& (isDescendants() || isAssociation())) {
 			throw new DatastoreDataException(
 					"Property cannot be annotated as @Field if it is annotated @Descendants or @Reference: "
 							+ getFieldName());
 		}
-		if (isDescendants() && isReference()) {
+		if (isDescendants() && isAssociation()) {
 			throw new DatastoreDataException(
 					"Property cannot be annotated both @Descendants and @Reference: "
 							+ getFieldName());
@@ -89,11 +89,6 @@ public class DatastorePersistentPropertyImpl
 	}
 
 	@Override
-	public boolean isReference() {
-		return findAnnotation(Reference.class) != null;
-	}
-
-	@Override
 	public boolean isDescendants() {
 		return findAnnotation(Descendants.class) != null;
 	}
@@ -105,7 +100,7 @@ public class DatastorePersistentPropertyImpl
 
 	@Override
 	public boolean isColumnBacked() {
-		return !isDescendants() && !isReference();
+		return !isDescendants() && !isAssociation();
 	}
 
 	@Override

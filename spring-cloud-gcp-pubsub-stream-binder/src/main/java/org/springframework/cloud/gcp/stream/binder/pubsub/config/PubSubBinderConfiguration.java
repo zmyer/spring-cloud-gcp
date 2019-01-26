@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.cloud.gcp.stream.binder.pubsub.config;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.Collections;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -32,6 +32,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Pub/Sub binder configuration.
+ *
  * @author João André Martins
  * @author Daniel Zou
  */
@@ -57,7 +59,7 @@ public class PubSubBinderConfiguration {
 
 	@Bean
 	public MappingsProvider pubSubExtendedPropertiesDefaultMappingsProvider() {
-		return () -> ImmutableMap.of(
+		return () -> Collections.singletonMap(
 				ConfigurationPropertyName.of("spring.cloud.stream.gcp.pubsub.bindings"),
 				ConfigurationPropertyName.of("spring.cloud.stream.gcp.pubsub.default"));
 	}

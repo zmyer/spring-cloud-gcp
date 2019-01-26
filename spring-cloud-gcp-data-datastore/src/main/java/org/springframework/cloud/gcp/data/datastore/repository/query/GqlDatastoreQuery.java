@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@ import com.google.cloud.datastore.BaseEntity;
 import com.google.cloud.datastore.GqlQuery;
 import com.google.cloud.datastore.GqlQuery.Builder;
 import com.google.cloud.datastore.Key;
-import com.google.common.annotations.VisibleForTesting;
 
 import org.springframework.cloud.gcp.data.datastore.core.DatastoreTemplate;
 import org.springframework.cloud.gcp.data.datastore.core.convert.DatastoreNativeTypes;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastoreDataException;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastoreMappingContext;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastorePersistentEntity;
+import org.springframework.cloud.gcp.data.datastore.core.util.ValueUtil;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
@@ -49,7 +49,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * Query Method for GQL queries.
- *
+ * @param <T> the return type of the Query Method
  * @author Chengyuan Zhao
  *
  * @since 1.1
@@ -73,10 +73,12 @@ public class GqlDatastoreQuery<T> extends AbstractDatastoreQuery<T> {
 	private SpelQueryContext.EvaluatingSpelQueryContext evaluatingSpelQueryContext;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 * @param type the underlying entity type
 	 * @param queryMethod the underlying query method to support.
 	 * @param datastoreTemplate used for executing queries.
+	 * @param gql the query text.
+	 * @param evaluationContextProvider the provider used to evaluate SpEL expressions in queries.
 	 * @param datastoreMappingContext used for getting metadata about entities.
 	 */
 	public GqlDatastoreQuery(Class<T> type, DatastoreQueryMethod queryMethod,
@@ -125,9 +127,9 @@ public class GqlDatastoreQuery<T> extends AbstractDatastoreQuery<T> {
 						GqlDatastoreQuery::getNonEntityObjectFromRow)
 				: this.datastoreTemplate.queryKeysOrEntities(query, this.entityType);
 
-		List rawResult = found == null ? Collections.emptyList()
-				: (List) StreamSupport.stream(found.spliterator(), false)
-						.collect(Collectors.toList());
+		List rawResult = (found != null)
+				? (List) StreamSupport.stream(found.spliterator(), false).collect(Collectors.toList())
+				: Collections.emptyList();
 
 		Object result;
 
@@ -178,7 +180,6 @@ public class GqlDatastoreQuery<T> extends AbstractDatastoreQuery<T> {
 				: this.queryMethod.getResultProcessor().processResult(rawResult.get(0));
 	}
 
-	@VisibleForTesting
 	boolean isNonEntityReturnedType(Class returnedType) {
 		return this.datastoreTemplate.getDatastoreEntityConverter().getConversions()
 				.getDatastoreCompatibleType(returnedType).isPresent();
@@ -221,7 +222,15 @@ public class GqlDatastoreQuery<T> extends AbstractDatastoreQuery<T> {
 		}
 		for (int i = 0; i < tags.size(); i++) {
 			Object val = vals.get(i);
-			DatastoreNativeTypes.bindValueToGqlBuilder(builder, tags.get(i), val);
+			Object boundVal;
+			if (ValueUtil.isCollectionLike(val.getClass())) {
+				boundVal = convertCollectionParamToCompatibleArray((List) ValueUtil.toListIfArray(val));
+			}
+			else {
+				boundVal = this.datastoreTemplate.getDatastoreEntityConverter().getConversions()
+						.convertOnWriteSingle(val).get();
+			}
+			DatastoreNativeTypes.bindValueToGqlBuilder(builder, tags.get(i), boundVal);
 		}
 		return builder.build();
 	}
@@ -276,7 +285,7 @@ public class GqlDatastoreQuery<T> extends AbstractDatastoreQuery<T> {
 						}
 						result = result.replace(matched, datastorePersistentEntity.kindName());
 					}
-					catch (ClassNotFoundException e) {
+					catch (ClassNotFoundException ex) {
 						throw new DatastoreDataException(
 								"The class name does not refer to an available entity type: "
 										+ className);

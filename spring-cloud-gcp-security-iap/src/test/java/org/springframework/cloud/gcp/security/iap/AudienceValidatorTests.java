@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.cloud.gcp.security.iap;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,8 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
@@ -44,6 +44,9 @@ public class AudienceValidatorTests {
 	private ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(TestConfiguration.class));
 
+	/**
+	 * used to test for exception messages and types.
+	 */
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
@@ -58,25 +61,28 @@ public class AudienceValidatorTests {
 	@Test
 	public void testCorrectAudienceMatches() {
 		Jwt mockJwt = Mockito.mock(Jwt.class);
-		when(mockJwt.getAudience()).thenReturn(ImmutableList.of("cats"));
+		when(mockJwt.getAudience()).thenReturn(Arrays.asList("cats"));
 
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			AudienceValidator validator = context.getBean(AudienceValidator.class);
-			assertFalse(validator.validate(mockJwt).hasErrors());
+			assertThat(validator.validate(mockJwt).hasErrors()).isFalse();
 		});
 	}
 
 	@Test
 	public void testWrongAudienceDoesNotMatch() {
 		Jwt mockJwt = Mockito.mock(Jwt.class);
-		when(mockJwt.getAudience()).thenReturn(ImmutableList.of("dogs"));
+		when(mockJwt.getAudience()).thenReturn(Arrays.asList("dogs"));
 
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			AudienceValidator validator = context.getBean(AudienceValidator.class);
-			assertTrue(validator.validate(mockJwt).hasErrors());
+			assertThat(validator.validate(mockJwt).hasErrors()).isTrue();
 		});
 	}
 
+	/**
+	 * Configuration for the tests.
+	 */
 	@Configuration
 	static class TestConfiguration {
 		@Bean

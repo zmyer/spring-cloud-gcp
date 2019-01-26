@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.cloud.gcp.pubsub;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.api.gax.core.CredentialsProvider;
@@ -26,7 +28,6 @@ import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.SubscriptionAdminSettings;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminSettings;
-import com.google.common.collect.Lists;
 import com.google.pubsub.v1.ProjectName;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
@@ -42,6 +43,7 @@ import org.springframework.util.Assert;
  *
  * @author João André Martins
  * @author Mike Eltsufin
+ * @author Chengyuan Zhao
  */
 public class PubSubAdmin implements AutoCloseable {
 
@@ -61,6 +63,9 @@ public class PubSubAdmin implements AutoCloseable {
 	/**
 	 * This constructor instantiates TopicAdminClient and SubscriptionAdminClient with all their
 	 * defaults and the provided credentials provider.
+	 * @param projectIdProvider the project id provider to use
+	 * @param credentialsProvider the credentials provider to use
+	 * @throws IOException thrown when there are errors in contacting Google Cloud Pub/Sub
 	 */
 	public PubSubAdmin(GcpProjectIdProvider projectIdProvider,
 			CredentialsProvider credentialsProvider) throws IOException {
@@ -134,14 +139,16 @@ public class PubSubAdmin implements AutoCloseable {
 
 	/**
 	 * Return every topic in a project.
-	 *
 	 * <p>If there are multiple pages, they will all be merged into the same result.
+	 * @return a list of topics
 	 */
 	public List<Topic> listTopics() {
 		TopicAdminClient.ListTopicsPagedResponse topicListPage =
 				this.topicAdminClient.listTopics(ProjectName.of(this.projectId));
 
-		return Lists.newArrayList(topicListPage.iterateAll());
+		List<Topic> topics = new ArrayList<>();
+		topicListPage.iterateAll().forEach(topics::add);
+		return Collections.unmodifiableList(topics);
 	}
 
 	/**
@@ -174,7 +181,7 @@ public class PubSubAdmin implements AutoCloseable {
 	 *
 	 * @param subscriptionName the name of the new subscription
 	 * @param topicName the name of the topic being subscribed to
-	 * @param pushEndpoint URL of the service receiving the push messages. If not provided, uses
+	 * @param pushEndpoint the URL of the service receiving the push messages. If not provided, uses
 	 *                     message pulling by default
 	 * @return the created subscription
 	 */
@@ -190,7 +197,7 @@ public class PubSubAdmin implements AutoCloseable {
 	 * @param topicName the name of the topic being subscribed to
 	 * @param ackDeadline deadline in seconds before a message is resent, must be between 10 and 600 seconds.
 	 *                    If not provided, set to default of 10 seconds
-	 * @param pushEndpoint URL of the service receiving the push messages. If not provided, uses
+	 * @param pushEndpoint the URL of the service receiving the push messages. If not provided, uses
 	 *                     message pulling by default
 	 * @return the created subscription
 	 */
@@ -253,17 +260,20 @@ public class PubSubAdmin implements AutoCloseable {
 
 	/**
 	 * Return every subscription in a project.
-	 *
 	 * <p>If there are multiple pages, they will all be merged into the same result.
+	 * @return a list of subscriptions
 	 */
 	public List<Subscription> listSubscriptions() {
 		SubscriptionAdminClient.ListSubscriptionsPagedResponse subscriptionsPage =
 				this.subscriptionAdminClient.listSubscriptions(ProjectName.of(this.projectId));
 
-		return Lists.newArrayList(subscriptionsPage.iterateAll());
+		List<Subscription> subscriptions = new ArrayList<>();
+		subscriptionsPage.iterateAll().forEach(subscriptions::add);
+		return Collections.unmodifiableList(subscriptions);
 	}
 
 	/**
+	 * Get the default ack deadline.
 	 * @return the default acknowledgement deadline value in seconds
 	 */
 	public int getDefaultAckDeadline() {

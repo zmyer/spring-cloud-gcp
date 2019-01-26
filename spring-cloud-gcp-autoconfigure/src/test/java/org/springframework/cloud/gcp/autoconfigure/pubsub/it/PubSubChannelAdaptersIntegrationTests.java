@@ -39,7 +39,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cloud.gcp.autoconfigure.core.GcpContextAutoConfiguration;
 import org.springframework.cloud.gcp.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
 import org.springframework.cloud.gcp.core.GcpProjectIdProvider;
-import org.springframework.cloud.gcp.core.UsageTrackingHeaderProvider;
+import org.springframework.cloud.gcp.core.UserAgentHeaderProvider;
 import org.springframework.cloud.gcp.pubsub.PubSubAdmin;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.cloud.gcp.pubsub.integration.AckMode;
@@ -71,6 +71,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
+ * Tests for Pub/Sub channel adapters.
+ *
  * @author João André Martins
  * @author Mike Eltsufin
  */
@@ -106,7 +108,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 
 	@Test
 	public void sendAndReceiveMessageAsString() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			try {
 				Map<String, Object> headers = new HashMap<>();
 				// Only String values for now..
@@ -140,7 +142,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 
 	@Test
 	public void sendAndReceiveMessage() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			try {
 				context.getBean("inputChannel", MessageChannel.class).send(
 						MessageBuilder.withPayload("I am a message.".getBytes()).build());
@@ -162,7 +164,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 
 	@Test
 	public void sendAndReceiveMessageManualAck() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			try {
 				context.getBean(PubSubInboundChannelAdapter.class).setAckMode(AckMode.MANUAL);
 				context.getBean("inputChannel", MessageChannel.class).send(
@@ -198,7 +200,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 	@Test
 	@SuppressWarnings("deprecation")
 	public void sendAndReceiveMessageManualAckThroughAcknowledgementHeader() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			try {
 				context.getBean(PubSubInboundChannelAdapter.class).setAckMode(AckMode.MANUAL);
 				context.getBean("inputChannel", MessageChannel.class).send(
@@ -234,8 +236,8 @@ public class PubSubChannelAdaptersIntegrationTests {
 			try {
 				Thread.sleep(100);
 			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
+			catch (InterruptedException ex) {
+				ex.printStackTrace();
 				fail("Interrupted while waiting for text.");
 			}
 		}
@@ -244,7 +246,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 
 	@Test
 	public void sendAndReceiveMessagePublishCallback() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.run((context) -> {
 			try {
 				ListenableFutureCallback<String> callbackSpy = Mockito.spy(
 						new ListenableFutureCallback<String>() {
@@ -275,6 +277,9 @@ public class PubSubChannelAdaptersIntegrationTests {
 		});
 	}
 
+	/**
+	 * Spring Boot config for tests.
+	 */
 	@Configuration
 	@EnableIntegration
 	static class IntegrationConfiguration {
@@ -322,7 +327,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 			factory.setExecutorProvider(executorProvider);
 			factory.setCredentialsProvider(credentialsProvider);
 			factory.setHeaderProvider(
-					new UsageTrackingHeaderProvider(GcpPubSubAutoConfiguration.class));
+					new UserAgentHeaderProvider(GcpPubSubAutoConfiguration.class));
 			factory.setChannelProvider(transportChannelProvider);
 
 			return factory;
@@ -343,7 +348,7 @@ public class PubSubChannelAdaptersIntegrationTests {
 			factory.setExecutorProvider(executorProvider);
 			factory.setCredentialsProvider(credentialsProvider);
 			factory.setHeaderProvider(
-					new UsageTrackingHeaderProvider(GcpPubSubAutoConfiguration.class));
+					new UserAgentHeaderProvider(GcpPubSubAutoConfiguration.class));
 			factory.setChannelProvider(transportChannelProvider);
 			return factory;
 		}

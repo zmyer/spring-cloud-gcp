@@ -23,6 +23,7 @@ import com.google.cloud.spanner.DatabaseClient;
 import com.google.cloud.spanner.Statement;
 import com.google.cloud.spanner.Struct;
 import com.google.cloud.spanner.Value;
+import org.assertj.core.data.Offset;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,12 +51,12 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -63,9 +64,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * Tests Spanner SQL Query Methods.
+ *
  * @author Chengyuan Zhao
  */
 public class SqlSpannerQueryTests {
+
+	private static final Offset<Double> DELTA = Offset.offset(0.00001);
 
 	private SpannerTemplate spannerTemplate;
 
@@ -84,6 +89,9 @@ public class SqlSpannerQueryTests {
 	private final SpannerEntityProcessor spannerEntityProcessor = mock(
 			SpannerEntityProcessor.class);
 
+	/**
+	 * checks messages and types for exceptions.
+	 */
 	@Rule
 	public ExpectedException expectedEx = ExpectedException.none();
 
@@ -98,11 +106,11 @@ public class SqlSpannerQueryTests {
 		this.evaluationContextProvider = mock(QueryMethodEvaluationContextProvider.class);
 	}
 
-	private SqlSpannerQuery<Trade> createQuery(String sql) {
+	private SqlSpannerQuery<Trade> createQuery(String sql, boolean isDml) {
 		return new SqlSpannerQuery<Trade>(Trade.class, this.queryMethod,
 				this.spannerTemplate,
 				sql, this.evaluationContextProvider, this.expressionParser,
-				new SpannerMappingContext());
+				new SpannerMappingContext(), isDml);
 	}
 
 	@Test
@@ -145,7 +153,7 @@ public class SqlSpannerQueryTests {
 		// @formatter:on
 
 		when(parameters.getNumberOfParameters()).thenReturn(paramNames.length);
-		when(parameters.getParameter(anyInt())).thenAnswer(invocation -> {
+		when(parameters.getParameter(anyInt())).thenAnswer((invocation) -> {
 			int index = invocation.getArgument(0);
 			Parameter param = mock(Parameter.class);
 			when(param.getName()).thenReturn(Optional.of(paramNames[index]));
@@ -164,30 +172,31 @@ public class SqlSpannerQueryTests {
 		when(this.evaluationContextProvider.getEvaluationContext(any(), any()))
 				.thenReturn(evaluationContext);
 
-		SqlSpannerQuery sqlSpannerQuery = createQuery(sql);
+		SqlSpannerQuery sqlSpannerQuery = createQuery(sql, false);
 
-		doAnswer(invocation -> {
+		doAnswer((invocation) -> {
 			Statement statement = invocation.getArgument(0);
 			SpannerQueryOptions queryOptions = invocation.getArgument(1);
-			assertTrue(queryOptions.isAllowPartialRead());
+			assertThat(queryOptions.isAllowPartialRead()).isTrue();
 
-			assertEquals(entityResolvedSql, statement.getSql());
+			assertThat(statement.getSql()).isEqualTo(entityResolvedSql);
 
 			Map<String, Value> paramMap = statement.getParameters();
 
-			assertEquals(params[0], paramMap.get("tag0").getString());
+			assertThat(paramMap.get("tag0").getString()).isEqualTo(params[0]);
 			//params[1] is this.pageable that is ignored, hence no synthetic tag is created for it
-			assertEquals(params[2], paramMap.get("tag1").getString());
-			assertEquals(params[3], paramMap.get("tag2").getString());
-			assertEquals(params[4], paramMap.get("tag3").getFloat64());
-			assertEquals(params[5], paramMap.get("tag4").getFloat64());
-			assertEquals(params[6], paramMap.get("tag5").getString());
-			assertEquals(params[7], paramMap.get("tag6").getFloat64());
-			assertEquals(params[8], paramMap.get("tag7").getFloat64());
-			assertEquals(params[9], paramMap.get("tag8").getStruct());
+			assertThat(paramMap.get("tag1").getString()).isEqualTo(params[2]);
+			assertThat(paramMap.get("tag2").getString()).isEqualTo(params[3]);
+			assertThat(paramMap.get("tag3").getFloat64()).isEqualTo(params[4]);
+			assertThat(paramMap.get("tag4").getFloat64()).isEqualTo(params[5]);
+			assertThat(paramMap.get("tag5").getString()).isEqualTo(params[6]);
+			assertThat(paramMap.get("tag6").getFloat64()).isEqualTo(params[7]);
+			assertThat(paramMap.get("tag7").getFloat64()).isEqualTo(params[8]);
+			assertThat(paramMap.get("tag8").getStruct()).isEqualTo(params[9]);
 			verify(this.spannerEntityProcessor, times(1)).write(same(params[10]), any());
-			assertEquals(-8.88, paramMap.get("SpELtag1").getFloat64(), 0.00001);
-			assertEquals(-3.33, paramMap.get("SpELtag2").getFloat64(), 0.00001);
+
+			assertThat(paramMap.get("SpELtag1").getFloat64()).isEqualTo(-8.88, DELTA);
+			assertThat(paramMap.get("SpELtag2").getFloat64()).isEqualTo(-3.33, DELTA);
 
 			return null;
 		}).when(this.spannerTemplate).executeQuery(any(), any());
@@ -210,7 +219,7 @@ public class SqlSpannerQueryTests {
 		// @formatter:on
 		when(parameters.getNumberOfParameters()).thenReturn(0);
 
-		SqlSpannerQuery sqlSpannerQuery = createQuery(sql);
+		SqlSpannerQuery sqlSpannerQuery = createQuery(sql, false);
 
 		sqlSpannerQuery.execute(new Object[] { this.pageable, this.sort });
 	}
@@ -228,7 +237,7 @@ public class SqlSpannerQueryTests {
 		// @formatter:on
 		when(parameters.getNumberOfParameters()).thenReturn(0);
 
-		SqlSpannerQuery sqlSpannerQuery = createQuery(sql);
+		SqlSpannerQuery sqlSpannerQuery = createQuery(sql, false);
 
 		sqlSpannerQuery.execute(new Object[] { this.pageable, this.pageable });
 	}
@@ -246,9 +255,32 @@ public class SqlSpannerQueryTests {
 		// @formatter:on
 		when(parameters.getNumberOfParameters()).thenReturn(0);
 
-		SqlSpannerQuery sqlSpannerQuery = createQuery(sql);
+		SqlSpannerQuery sqlSpannerQuery = createQuery(sql, false);
 
 		sqlSpannerQuery.execute(new Object[] { this.sort, this.sort });
+	}
+
+	@Test
+	public void dmlTest() {
+		String sql = "dml statement here";
+
+		Parameters parameters = mock(Parameters.class);
+		// @formatter:off
+		Mockito.<Parameters>when(this.queryMethod.getParameters())
+				.thenReturn(parameters);
+		// @formatter:on
+		when(parameters.getNumberOfParameters()).thenReturn(0);
+
+		SqlSpannerQuery sqlSpannerQuery = spy(createQuery(sql, true));
+
+		doReturn(long.class).when(sqlSpannerQuery)
+				.getReturnedSimpleConvertableItemType();
+		doReturn(null).when(sqlSpannerQuery).convertToSimpleReturnType(any(),
+				any());
+
+		sqlSpannerQuery.execute(new Object[] {});
+
+		verify(this.spannerTemplate, times(1)).executeDmlStatement(any());
 	}
 
 	private static class SymbolAction {

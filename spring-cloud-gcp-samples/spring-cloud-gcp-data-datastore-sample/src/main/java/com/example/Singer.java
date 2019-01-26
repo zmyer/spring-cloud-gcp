@@ -26,10 +26,12 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.Descendants;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.Entity;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.Field;
-import org.springframework.cloud.gcp.data.datastore.core.mapping.Reference;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Reference;
 
 /**
+ * Sample entity.
+ *
  * @author Chengyuan Zhao
  * @author Dmitry Solomakha
  */
@@ -148,13 +150,13 @@ public class Singer {
 		return "Singer{" + "singerId='" + this.singerId + '\'' + ", firstName='"
 				+ this.firstName + '\'' + ", lastName='" + this.lastName + '\''
 				+ ", albums=" + this.albums + ", firstBand=" + this.firstBand + ", bands="
-				+ (this.bands == null ? ""
-						: Strings.join(this.bands.stream().map(x -> x.getName())
+				+ ((this.bands == null) ? ""
+						: Strings.join(this.bands.stream().map((x) -> x.getName())
 								.collect(Collectors.toList()), ','))
 				+ ", personalInstruments="
-				+ (this.personalInstruments == null ? ""
+				+ ((this.personalInstruments == null) ? ""
 						: Strings.join(this.personalInstruments.stream()
-								.map(x -> x.getType()).collect(Collectors.toList()), ','))
+								.map((x) -> x.getType()).collect(Collectors.toList()), ','))
 				+ '}';
 	}
 }

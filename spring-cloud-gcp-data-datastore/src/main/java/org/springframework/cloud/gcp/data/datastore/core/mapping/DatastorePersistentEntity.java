@@ -21,7 +21,9 @@ import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.model.MutablePersistentEntity;
 
 /**
- * Persistent entity for Google Cloud Datastore
+ * Persistent entity for Google Cloud Datastore.
+ *
+ * @param <T> the type of the property described by this persistent property
  *
  * @author Chengyuan Zhao
  *
@@ -63,16 +65,5 @@ public interface DatastorePersistentEntity<T> extends
 	 * @param handler must not be {@literal null}.
 	 */
 	void doWithDescendantProperties(
-			PropertyHandler<DatastorePersistentProperty> handler);
-
-	/**
-	 * Applies the given {@link PropertyHandler} to all
-	 * {@link DatastorePersistentProperty} contained in this
-	 * {@link DatastorePersistentEntity} that are properties stored as keys referring to other
-	 * entities in Cloud Datastore.
-	 *
-	 * @param handler must not be {@literal null}.
-	 */
-	void doWithReferenceProperties(
 			PropertyHandler<DatastorePersistentProperty> handler);
 }

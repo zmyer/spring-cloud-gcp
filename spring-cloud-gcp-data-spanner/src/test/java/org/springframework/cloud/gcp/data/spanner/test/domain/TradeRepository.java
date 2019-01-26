@@ -27,6 +27,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 /**
+ * A repository for integration tests that holds many complex use cases.
+ *
  * @author Chengyuan Zhao
  */
 public interface TradeRepository extends SpannerRepository<Trade, Key> {
@@ -42,6 +44,10 @@ public interface TradeRepository extends SpannerRepository<Trade, Key> {
 	List<Trade> deleteBySymbol(String symbol);
 
 	void deleteBySymbolAndAction(String symbol, String action);
+
+	@Query(dmlStatement = true, value = "UPDATE :org.springframework.cloud.gcp.data.spanner.test.domain.Trade:" +
+			" set action = @action WHERE id = @id")
+	long updateActionTradeById(@Param("id") String id, @Param("action") String act);
 
 	@Query(" select count(1) from :org.springframework.cloud.gcp.data.spanner.test.domain.Trade: "
 			+ "where action = @action")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.auth.MoreCallCredentials;
 import zipkin2.Span;
-import zipkin2.codec.BytesEncoder;
 import zipkin2.propagation.stackdriver.StackdriverTracePropagation;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
+import zipkin2.reporter.ReporterMetrics;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.StackdriverEncoder;
 import zipkin2.reporter.stackdriver.StackdriverSender;
@@ -50,40 +52,55 @@ import org.springframework.cloud.gcp.autoconfigure.trace.sleuth.StackdriverHttpC
 import org.springframework.cloud.gcp.autoconfigure.trace.sleuth.StackdriverHttpServerParser;
 import org.springframework.cloud.gcp.core.DefaultCredentialsProvider;
 import org.springframework.cloud.gcp.core.GcpProjectIdProvider;
-import org.springframework.cloud.gcp.core.UsageTrackingHeaderProvider;
+import org.springframework.cloud.gcp.core.UserAgentHeaderProvider;
 import org.springframework.cloud.sleuth.autoconfig.SleuthProperties;
 import org.springframework.cloud.sleuth.autoconfig.TraceAutoConfiguration;
 import org.springframework.cloud.sleuth.instrument.web.TraceHttpAutoConfiguration;
 import org.springframework.cloud.sleuth.sampler.ProbabilityBasedSampler;
 import org.springframework.cloud.sleuth.sampler.SamplerProperties;
-import org.springframework.cloud.sleuth.zipkin2.ZipkinAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
+ * Config for Stackdriver Trace.
+ *
  * @author Ray Tsang
  * @author João André Martins
  * @author Mike Eltsufin
+ * @author Chengyuan Zhao
+ * @author Tim Ysewyn
  */
 @Configuration
 @EnableConfigurationProperties(
 		{ SamplerProperties.class, GcpTraceProperties.class, SleuthProperties.class })
-@ConditionalOnProperty(value = "spring.cloud.gcp.trace.enabled", matchIfMissing = true)
+@ConditionalOnProperty(value = { "spring.sleuth.enabled", "spring.cloud.gcp.trace.enabled" }, matchIfMissing = true)
 @ConditionalOnClass(StackdriverSender.class)
-@AutoConfigureBefore({ ZipkinAutoConfiguration.class, TraceAutoConfiguration.class})
+@AutoConfigureBefore(TraceAutoConfiguration.class)
 public class StackdriverTraceAutoConfiguration {
+
+	/**
+	 * Stackdriver reporter bean name. Name of the bean matters for supporting multiple tracing
+	 * systems.
+	 */
+	public static final String REPORTER_BEAN_NAME = "stackdriverReporter";
+
+	/**
+	 * Stackdriver sender bean name. Name of the bean matters for supporting multiple tracing
+	 * systems.
+	 */
+	public static final String SENDER_BEAN_NAME = "stackdriverSender";
 
 	private GcpProjectIdProvider finalProjectIdProvider;
 
 	private CredentialsProvider finalCredentialsProvider;
 
-	private UsageTrackingHeaderProvider headerProvider = new UsageTrackingHeaderProvider(this.getClass());
+	private UserAgentHeaderProvider headerProvider = new UserAgentHeaderProvider(this.getClass());
 
 	public StackdriverTraceAutoConfiguration(GcpProjectIdProvider gcpProjectIdProvider,
 			CredentialsProvider credentialsProvider,
 			GcpTraceProperties gcpTraceProperties) throws IOException {
-		this.finalProjectIdProvider = gcpTraceProperties.getProjectId() != null
+		this.finalProjectIdProvider = (gcpTraceProperties.getProjectId() != null)
 				? gcpTraceProperties::getProjectId
 				: gcpProjectIdProvider;
 		this.finalCredentialsProvider =
@@ -115,8 +132,19 @@ public class StackdriverTraceAutoConfiguration {
 				.build();
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
+	@Bean(REPORTER_BEAN_NAME)
+	@ConditionalOnMissingBean(name = REPORTER_BEAN_NAME)
+	public Reporter<Span> stackdriverReporter(ReporterMetrics reporterMetrics,
+			GcpTraceProperties trace, @Qualifier(SENDER_BEAN_NAME) Sender sender) {
+		return AsyncReporter.builder(sender)
+				// historical constraint. Note: AsyncReporter supports memory bounds
+				.queuedMaxSpans(1000)
+				.messageTimeout(trace.getMessageTimeout(), TimeUnit.SECONDS)
+				.metrics(reporterMetrics).build(StackdriverEncoder.V1);
+	}
+
+	@Bean(SENDER_BEAN_NAME)
+	@ConditionalOnMissingBean(name = SENDER_BEAN_NAME)
 	public Sender stackdriverSender(GcpTraceProperties traceProperties,
 			@Qualifier("traceExecutorProvider") ExecutorProvider executorProvider,
 			@Qualifier("stackdriverSenderChannel") ManagedChannel channel)
@@ -164,16 +192,13 @@ public class StackdriverTraceAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public BytesEncoder<Span> spanBytesEncoder() {
-		return StackdriverEncoder.V1;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
 	public Propagation.Factory stackdriverPropagation() {
 		return StackdriverTracePropagation.FACTORY;
 	}
 
+	/**
+	 * Configuration for refresh scope probability based sampler.
+	 */
 	@Configuration
 	@ConditionalOnClass(RefreshScope.class)
 	protected static class RefreshScopedProbabilityBasedSamplerConfiguration {
@@ -185,6 +210,9 @@ public class StackdriverTraceAutoConfiguration {
 		}
 	}
 
+	/**
+	 * Configuration for non-refresh scope probability based sampler.
+	 */
 	@Configuration
 	@ConditionalOnMissingClass("org.springframework.cloud.context.config.annotation.RefreshScope")
 	protected static class NonRefreshScopeProbabilityBasedSamplerConfiguration {
@@ -195,6 +223,9 @@ public class StackdriverTraceAutoConfiguration {
 		}
 	}
 
+	/**
+	 * Configuration for Sleuth.
+	 */
 	@Configuration
 	@ConditionalOnProperty(name = "spring.sleuth.http.enabled",
 			havingValue = "true", matchIfMissing = true)

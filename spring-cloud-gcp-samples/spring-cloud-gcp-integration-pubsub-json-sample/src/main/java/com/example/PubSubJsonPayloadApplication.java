@@ -38,9 +38,11 @@ public class PubSubJsonPayloadApplication {
 	/**
 	 * This bean enables serialization/deserialization of Java objects to JSON allowing you
 	 * utilize JSON message payloads in Cloud Pub/Sub.
+	 * @param objectMapper the object mapper to use
+	 * @return a Jackson message converter
 	 */
 	@Bean
-	public JacksonPubSubMessageConverter jacksonPubSubMessageConverter() {
-		return new JacksonPubSubMessageConverter(new ObjectMapper());
+	public JacksonPubSubMessageConverter jacksonPubSubMessageConverter(ObjectMapper objectMapper) {
+		return new JacksonPubSubMessageConverter(objectMapper);
 	}
 }

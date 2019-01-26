@@ -22,13 +22,15 @@ import java.util.Objects;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.Entity;
 
 /**
+ * Sample entity.
+ *
  * @author Dmitry Solomakha
  */
 @Entity
-public class Album {
-	final private String albumName;
+public class Album implements Comparable<Album> {
+	private final String albumName;
 
-	final private LocalDate date;
+	private final LocalDate date;
 
 	Album(String albumName, LocalDate date) {
 		this.albumName = albumName;
@@ -65,5 +67,11 @@ public class Album {
 	public String toString() {
 		return "Album{" + "albumName='" + this.albumName + '\'' + ", date=" + this.date
 				+ '}';
+	}
+
+
+	@Override
+	public int compareTo(Album album) {
+		return this.albumName.compareTo(album.albumName);
 	}
 }

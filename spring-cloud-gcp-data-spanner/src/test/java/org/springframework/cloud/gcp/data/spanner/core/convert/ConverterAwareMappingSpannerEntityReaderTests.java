@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.google.cloud.spanner.Struct;
 import com.google.cloud.spanner.Type;
 import com.google.cloud.spanner.Type.StructField;
 import com.google.cloud.spanner.Value;
-import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,21 +43,23 @@ import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.Nullable;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
+ * Tests for converting and reading Spanner entities and objects.
+ *
  * @author Chengyuan Zhao
  * @author Balint Pato
  */
 public class ConverterAwareMappingSpannerEntityReaderTests {
 
+	/**
+	 * used for checking exception messages and types.
+	 */
 	@Rule
 	public ExpectedException expectedEx = ExpectedException.none();
 
@@ -80,15 +81,15 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct outerStruct = Struct.newBuilder().set("id").to(Value.string("key1"))
 				.set("innerTestEntities")
 				.toStructArray(Type.struct(StructField.of("value", Type.string())),
-						ImmutableList.of(innerStruct))
+						Arrays.asList(innerStruct))
 				.build();
 
 		OuterTestEntity result = this.spannerEntityReader.read(OuterTestEntity.class,
 				outerStruct, null, true);
-		assertEquals("key1", result.id);
-		assertEquals(1, result.innerTestEntities.size());
-		assertEquals("inner-value", result.innerTestEntities.get(0).value);
-		assertNull(result.innerTestEntities.get(0).missingColumnValue);
+		assertThat(result.id).isEqualTo("key1");
+		assertThat(result.innerTestEntities).hasSize(1);
+		assertThat(result.innerTestEntities.get(0).value).isEqualTo("inner-value");
+		assertThat(result.innerTestEntities.get(0).missingColumnValue).isNull();
 	}
 
 	@Test
@@ -98,14 +99,14 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct outerStruct = Struct.newBuilder().set("id").to(Value.string("key1"))
 				.set("innerStructs")
 				.toStructArray(Type.struct(StructField.of("value", Type.string())),
-						ImmutableList.of(innerStruct))
+						Arrays.asList(innerStruct))
 				.build();
 
 		OuterTestHoldingStructsEntity result = this.spannerEntityReader
 				.read(OuterTestHoldingStructsEntity.class, outerStruct);
-		assertEquals("key1", result.id);
-		assertEquals(1, result.innerStructs.size());
-		assertEquals("inner-value", result.innerStructs.get(0).getString("value"));
+		assertThat(result.id).isEqualTo("key1");
+		assertThat(result.innerStructs).hasSize(1);
+		assertThat(result.innerStructs.get(0).getString("value")).isEqualTo("inner-value");
 	}
 
 	@Test
@@ -117,8 +118,8 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 
 		OuterTestHoldingStructEntity result = this.spannerEntityReader
 				.read(OuterTestHoldingStructEntity.class, outerStruct);
-		assertEquals("key1", result.id);
-		assertEquals("inner-value", result.innerStruct.getString("value"));
+		assertThat(result.id).isEqualTo("key1");
+		assertThat(result.innerStruct.getString("value")).isEqualTo("inner-value");
 	}
 
 	@Test
@@ -142,7 +143,7 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct rowStruct = Struct.newBuilder().set("id").to(Value.string("key1"))
 				.set("innerLengths")
 				.toStructArray(Type.struct(StructField.of("string_col", Type.string())),
-						ImmutableList.of(colStruct))
+						Arrays.asList(colStruct))
 				.build();
 
 		new ConverterAwareMappingSpannerEntityReader(new SpannerMappingContext(),
@@ -162,7 +163,7 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct rowStruct = Struct.newBuilder().set("id").to(Value.string("key1"))
 				.set("innerLengths")
 				.toStructArray(Type.struct(StructField.of("string_col", Type.string())),
-						ImmutableList.of(colStruct))
+						Arrays.asList(colStruct))
 				.build();
 
 		OuterTestEntityFlat result = new ConverterAwareMappingSpannerEntityReader(
@@ -174,9 +175,9 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 						return source.getString("string_col").length();
 					}
 				}))).read(OuterTestEntityFlat.class, rowStruct);
-		assertEquals("key1", result.id);
-		assertEquals(1, result.innerLengths.size());
-		assertEquals((Integer) 5, result.innerLengths.get(0));
+		assertThat(result.id).isEqualTo("key1");
+		assertThat(result.innerLengths).hasSize(1);
+		assertThat(result.innerLengths.get(0)).isEqualTo(5);
 	}
 
 	@Test
@@ -205,7 +206,7 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct struct = Struct.newBuilder().set("id").to(Value.string("key1")).set("id2")
 				.to(Value.string("key2")).set("id3").to(Value.string("key3")).set("id4")
 				.to(Value.string("key4")).set("intField2").to(Value.int64(333L))
-				.set("custom_col").to(Value.string("string1")).set("booleanField")
+				.set("custom_col").to(Value.string("WHITE")).set("booleanField")
 				.to(Value.bool(true)).set("longField").to(Value.int64(3L))
 				.set("doubleField").to(Value.string("UNCONVERTABLE VALUE"))
 				.set("doubleArray")
@@ -233,7 +234,7 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		TestEntities.SimpleConstructorTester result = this.spannerEntityReader
 				.read(TestEntities.SimpleConstructorTester.class, row);
 
-		assertThat(result.id, is("1234"));
+		assertThat(result.id).isEqualTo("1234");
 	}
 
 	@Test
@@ -243,14 +244,14 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct outerStruct = Struct.newBuilder().set("id").to(Value.string("key1"))
 				.set("innerTestEntities")
 				.toStructArray(Type.struct(StructField.of("value", Type.string())),
-						ImmutableList.of(innerStruct))
+						Arrays.asList(innerStruct))
 				.build();
 
 		TestEntities.OuterTestEntityWithConstructor result = this.spannerEntityReader
 				.read(TestEntities.OuterTestEntityWithConstructor.class, outerStruct, null, true);
-		assertEquals("key1", result.id);
-		assertEquals(1, result.innerTestEntities.size());
-		assertEquals("value", result.innerTestEntities.get(0).value);
+		assertThat(result.id).isEqualTo("key1");
+		assertThat(result.innerTestEntities).hasSize(1);
+		assertThat(result.innerTestEntities.get(0).value).isEqualTo("value");
 	}
 
 	@Test
@@ -268,13 +269,13 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		Struct row = mock(Struct.class);
 		when(row.getString("id")).thenReturn("1234");
 		when(row.getType()).thenReturn(
-				Type.struct(ImmutableList.of(Type.StructField.of("id", Type.string()))));
+				Type.struct(Arrays.asList(Type.StructField.of("id", Type.string()))));
 		when(row.getColumnType("id")).thenReturn(Type.string());
 
 		TestEntities.SimpleConstructorTester result = this.spannerEntityReader
 				.read(TestEntities.SimpleConstructorTester.class, row);
 
-		assertThat(result.id, is("1234"));
+		assertThat(result.id).isEqualTo("1234");
 		verify(row, times(1)).getString("id");
 	}
 
@@ -295,7 +296,7 @@ public class ConverterAwareMappingSpannerEntityReaderTests {
 		this.expectedEx.expectMessage("in field 'zeroArgsListOfObjects': Unsupported number of " +
 				"type parameters found: 0 Only collections of exactly 1 type parameter are supported.");
 		Struct struct = Struct.newBuilder().set("zeroArgsListOfObjects")
-				.to(Value.stringArray(ImmutableList.of("hello", "world"))).build();
+				.to(Value.stringArray(Arrays.asList("hello", "world"))).build();
 		this.spannerEntityReader
 				.read(TestEntities.TestEntityWithListWithZeroTypeArgs.class, struct);
 	}

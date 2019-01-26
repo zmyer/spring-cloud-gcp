@@ -16,6 +16,7 @@
 
 package org.springframework.cloud.gcp.data.spanner.test.domain;
 
+import com.google.cloud.Timestamp;
 import com.google.spanner.v1.TypeCode;
 
 import org.springframework.cloud.gcp.data.spanner.core.mapping.Column;
@@ -24,7 +25,7 @@ import org.springframework.cloud.gcp.data.spanner.core.mapping.PrimaryKey;
 import org.springframework.cloud.gcp.data.spanner.core.mapping.Table;
 
 /**
- * A child interleaved table of {@link SubTrade} and a grand-child of {@link Trade}
+ * A child interleaved table of {@link SubTrade} and a grand-child of {@link Trade}.
  *
  * @author Chengyuan Zhao
  */
@@ -44,6 +45,9 @@ public class SubTradeComponent {
 	@Column(spannerType = TypeCode.STRING)
 	boolean booleanValue;
 
+	@Column(spannerCommitTimestamp = true)
+	Timestamp commitTimestamp;
+
 	public SubTradeComponent() {
 
 	}
@@ -59,5 +63,13 @@ public class SubTradeComponent {
 		this.subTradeIdentifier = subTradeIdentifier;
 		this.componentIdPartA = componentIdPartA;
 		this.componentIdPartB = componentIdPartB;
+	}
+
+	public Timestamp getCommitTimestamp() {
+		return this.commitTimestamp;
+	}
+
+	public void setCommitTimestamp(Timestamp commitTimestamp) {
+		this.commitTimestamp = commitTimestamp;
 	}
 }

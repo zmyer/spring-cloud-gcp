@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.cloud.gcp.data.datastore.repository.query;
 
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 
 import org.springframework.cloud.gcp.data.datastore.core.DatastoreTemplate;
 import org.springframework.cloud.gcp.data.datastore.core.mapping.DatastoreMappingContext;
@@ -30,7 +30,7 @@ import org.springframework.data.repository.query.RepositoryQuery;
 /**
  * Abstract class for implementing Cloud Datastore query methods.
  *
- * @param <T> The domain type of the repository class containing this query method.
+ * @param <T> the domain type of the repository class containing this query method.
  *
  * @author Chengyuan Zhao
  *
@@ -68,8 +68,28 @@ public abstract class AbstractDatastoreQuery<T> implements RepositoryQuery {
 				.collect(Collectors.toList());
 	}
 
-	@VisibleForTesting
+	/**
+	 * Convert collection-like param from the query method into an array of compatible types
+	 * for Datastore.
+	 * @param param the raw param
+	 * @return an array of a compatible type.
+	 */
+	protected Object[] convertCollectionParamToCompatibleArray(List<?> param) {
+		List converted = param.stream()
+				.map((x) -> this.datastoreTemplate.getDatastoreEntityConverter().getConversions().convertOnWriteSingle(x)
+						.get())
+				.collect(Collectors.toList());
+		return converted.toArray(
+				(Object[]) Array.newInstance(converted.isEmpty()
+						? String.class // if there are no items in the param
+						: converted.get(0).getClass(), converted.size()));
+	}
+
 	Object processRawObjectForProjection(T object) {
 		return this.queryMethod.getResultProcessor().processResult(object);
+	}
+
+	public DatastoreTemplate getDatastoreTemplate() {
+		return this.datastoreTemplate;
 	}
 }
